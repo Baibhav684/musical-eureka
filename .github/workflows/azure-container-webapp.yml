@@ -67,9 +67,22 @@ jobs:
     needs: build-and-deploy
 
     steps:
-      - name: Deploy to Azure Web App
-        uses: azure/webapps-deploy@v2
+      - name: Azure Login
+        uses: azure/login@v2
         with:
-          app-name: ${{ env.AZURE_WEBAPP_NAME }}
-          images: '${{ secrets.ACR_LOGIN_SERVER }}/recommendations-api:${{ github.sha }}'
-          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Update App Service sitecontainer
+        run: |
+          az webapp sitecontainers update \
+            --name recommendations-api \
+            --resource-group ADE-SANDBOX-RG \
+            --container-name main \
+            --image ${{ secrets.ACR_LOGIN_SERVER }}/recommendations-api:${{ github.sha }} \
+            --target-port 8000
+
+      - name: Restart App Service
+        run: |
+          az webapp restart \
+            --name recommendations-api \
+            --resource-group ADE-SANDBOX-RG
